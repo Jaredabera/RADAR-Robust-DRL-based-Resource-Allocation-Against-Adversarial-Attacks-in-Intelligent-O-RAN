@@ -3,7 +3,7 @@ RADAR is a DRL-based resource allocation mechanism for O-RAN, defending against 
 
 For detailed information on the *tested adversarial attacks*, please visit the following GitHub repository: Adversarial DRL ORAN:https://github.com/Jaredabera/adversarialdrlORAN.
 
-**Testing the DRL agents**
+# Testing the DRL agents
 
 This repository contains the script test_agent_release.py, which is used to test the DRL agents we used in our work. The script executes in three phases:
 
