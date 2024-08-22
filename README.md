@@ -11,8 +11,9 @@ Continuous learning loop for enhanced robustness
 **How It Works**
 
 1. *Data Collection*: Simulates data from network slices (dl_buffer, tx_brate, ratio_granted_req). system collects data from DUs (Data Units) using the get_data_from_DUs function. In this case, it's simulating data collection from a static dataset.
-2. *Adversarial Attack*: Applies small imperciptle  (ε=0.001) perturbations to create adversarial examples.
-3. *Preprocessing*: Normalizes data and reduces dimensionality via autoencoder.
-4. *DRL Decision-Making*: Feeds processed adversarial examples to slice-specific DRL agents.
-5. *Reward Calculation*: Computes and logs rewards based on slice-specific metrics.
-6. *Continuous Learning*: Repeats the process, allowing agents to adapt to adversarial inputs.
+2. *Adversarial Attack*: Applies small imperciptle  (ε=0.001) perturbations to create adversarial examples. The perturbed data is stored in the adversarial_examples list.
+3. *Preprocessing*: Normalizes data and reduces dimensionality via autoencoder. This compressed representation is used as input for the DRL agent.
+4. *DRL Decision-Making*: Feeds processed adversarial examples to slice-specific DRL agents. The agent generates an action (policy) for each slice based on the adversarial input.
+The actions determine the resource allocation for each slice.
+5. *Reward Calculation*: Computes and logs rewards based on slice-specific metrics. The rewards and actions are logged for each iteration.
+6. *Continuous Learning*: Repeats the process, allowing agents to adapt to adversarial inputs. By training on these perturbed inputs, the DRL agent becomes more robust to potential variations or attacks on agent new observations/data.
