@@ -36,7 +36,12 @@ We run a loop that extracts data from the dataset and feeds it to each DRL agent
 - Continuous learning loop for enhanced robustness
 
 **How It Works**
-
+## Dataset structure
+- ``slice_mixed``: UEs are randomly distributed across slices
+- ``slice_traffic``: UEs are divided per slice based on traffic types:
+  	- Slice 0: eMBB UEs
+  	- Slice 1: MTC UEs
+  	- Slice 2: URLLC UEs
 ![model_structure-Page-2](https://github.com/user-attachments/assets/6550f734-d10a-45d6-a454-8a761e23b549)
 
 1. *Data Collection*: Simulates data from network slices (dl_buffer, tx_brate, ratio_granted_req). system collects data from DUs (Data Units) using the get_data_from_DUs function. In this case, it's simulating data collection from a static dataset.
