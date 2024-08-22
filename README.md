@@ -1,5 +1,6 @@
 # RADAR-Robust-DRL-based-Resource-Allocation-Against-Adversarial-Attacks-in-Intelligent-O-RAN
 RADAR is a DRL-based resource allocation mechanism for O-RAN, defending against adversarial attacks. It enhances resilience through input space sanitization, augmentation, and adversarial training. RADAR significantly recovers user data rates across eMBB, mMTC, and uRLLC slices.
+![defense_resized-11](https://github.com/user-attachments/assets/34ade088-0ad1-4308-bd05-a1b3c6d228f2)
 
 For detailed information on the *tested adversarial attacks*, please visit the following GitHub repository: Adversarial DRL ORAN:https://github.com/Jaredabera/adversarialdrlORAN.
 
