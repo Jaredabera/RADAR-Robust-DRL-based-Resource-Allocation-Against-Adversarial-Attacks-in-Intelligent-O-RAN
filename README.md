@@ -11,7 +11,7 @@ Continuous learning loop for enhanced robustness
 **How It Works**
 
 1. *Data Collection*: Simulates data from network slices (dl_buffer, tx_brate, ratio_granted_req). system collects data from DUs (Data Units) using the get_data_from_DUs function. In this case, it's simulating data collection from a static dataset.
-2. *Adversarial Attack*: Applies small perturbations to create adversarial examples.
+2. *Adversarial Attack*: Applies small imperciptle  (ε=0.001) perturbations to create adversarial examples.
 3. *Preprocessing*: Normalizes data and reduces dimensionality via autoencoder.
 4. *DRL Decision-Making*: Feeds processed adversarial examples to slice-specific DRL agents.
 5. *Reward Calculation*: Computes and logs rewards based on slice-specific metrics.
