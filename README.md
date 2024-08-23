@@ -50,7 +50,7 @@ We run a loop that extracts data from the dataset and feeds it to each DRL agent
 ![model_structure-Page-2](https://github.com/user-attachments/assets/6550f734-d10a-45d6-a454-8a761e23b549)
 
 1. *Data Collection*: Simulates data from network slices (dl_buffer, tx_brate, ratio_granted_req). system collects data from DUs (Data Units) using the get_data_from_DUs function. In this case, it's simulating data collection from a static dataset.
-2. *Adversarial Attack*: Applies small imperciptle  (ε=0.001) perturbations to create adversarial examples. The perturbed data is stored in the adversarial_examples list.
+2. *Adversarial Attack*: Applies small imperciptle  (ε=0.01) perturbations to create adversarial examples. The perturbed data is stored in the adversarial_examples list.
 3. *Preprocessing*: Normalizes data and reduces dimensionality via autoencoder. This compressed representation is used as input for the DRL agent.
 4. *DRL Decision-Making*: Feeds processed adversarial examples to slice-specific DRL agents. The agent generates an action (policy) for each slice based on the adversarial input.
 The actions determine the resource allocation for each slice.
