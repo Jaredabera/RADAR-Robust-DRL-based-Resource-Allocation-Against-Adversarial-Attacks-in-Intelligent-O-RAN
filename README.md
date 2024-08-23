@@ -10,12 +10,15 @@ For detailed information on the *tested adversarial attacks*, please visit the f
 This repository contains the script test_agent_release.py, which is used to test the DRL agents we used in our work. The script executes in three phases:
 
 Phase 1: loading agents and encoder from ml_models;
+
 Phase 2: loading data from the CSV files in the repository;
+
 Phase 3: feeding the DRL agents which compute the best action for the current state. This phase runs in a loop.
-All required dependencies are included in the requirements.txt file.
+
+All required dependencies are included in the **requirements.txt file.**
 
 *Remark 1*: anyone interested in feeding real-time data to the DRL agents must implement proper methods to (i) gather data from DUs (i.e., get_data_from_DUs()); (ii) feed it to the DRL agent (i.e., split_data()); and (iii) feed back the output of the DRL agent to the DUs (i.e., send_action_to_DU()).
-
+Adversarial
 **Phase 1**
 We load the 3 DRL agents and the encoder portion of the autoencoder we used in the experimental section of our work. All models are stored in ml_models and loaded when starting the script. We have one DRL agent (i.e., the trained Proximal Policy Optimization (PPO) policy network) per slice. Rewards vary across the various DRL agents and are set as follows:
 
