@@ -56,3 +56,30 @@ We run a loop that extracts data from the dataset and feeds it to each DRL agent
 The actions determine the resource allocation for each slice.
 5. *Reward Calculation*: Computes and logs rewards based on slice-specific metrics. The rewards and actions are logged for each iteration.
 6. *Continuous Learning*: Repeats the process, allowing agents to adapt to adversarial inputs. By training on these perturbed inputs, the DRL agent becomes more robust to potential variations or attacks on agent new observations/data.
+   
+2) # Defensive Distillation for DRL-based Resource Allocation
+   
+This project also implements a defensive distillation technique for a Deep Reinforcement Learning (DRL) based resource allocation and scheduling model. Defensive distillation is a method used to improve the robustness of machine learning models against adversarial attacks.
+**How it Works**
+
+a) ***Teacher Model Loading:***
+
+The process starts by loading a pre-trained DRL model (the "teacher") that has learned effective resource allocation strategies.
+
+b) ***Student Model Creation:***
+A new model (the "student") is created with an architecture similar to the teacher model. This student model will be trained to mimic the teacher's behavior.
+
+c) ***Data Generation:***
+We generate slice_traffic input data that resembles the type of data the model would encounter in real-world scenarios. This data helps in training the student model without relying on potentially sensitive or limited real-world data.
+
+d) ***Soft Label Generation:***
+The teacher model is used to generate "soft labels" for the synthetic data. Instead of hard class assignments, soft labels are probability distributions over possible actions, providing more nuanced information about the teacher's decision-making process.
+
+e) ***Temperature Scaling:***
+The outputs of the teacher model are scaled by a temperature parameter before generating soft labels. This process typically softens the probability distribution, making the knowledge distillation more effective.
+
+f) ***Student Model Training:***
+The student model is trained to mimic the teacher's behavior by learning to produce similar soft labels for the synthetic input data. This process transfers the teacher's knowledge to the student in a way that can improve robustness.
+
+g) ***Model Saving:**
+After training, the student model is saved and can be used for inference in place of the original teacher model.
