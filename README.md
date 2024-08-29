@@ -57,7 +57,7 @@ The actions determine the resource allocation for each slice.
 5. *Reward Calculation*: Computes and logs rewards based on slice-specific metrics. The rewards and actions are logged for each iteration.
 6. *Continuous Learning*: Repeats the process, allowing agents to adapt to adversarial inputs. By training on these perturbed inputs, the DRL agent becomes more robust to potential variations or attacks on agent new observations/data.
    
-2) # Defensive Distillation for DRL-based Resource Allocation
+# Defensive Distillation for DRL-based Resource Allocation
    
 This project also implements a defensive distillation technique for a Deep Reinforcement Learning (DRL) based resource allocation and scheduling model. Defensive distillation is a method used to improve the robustness of machine learning models against adversarial attacks.
 **How it Works**
