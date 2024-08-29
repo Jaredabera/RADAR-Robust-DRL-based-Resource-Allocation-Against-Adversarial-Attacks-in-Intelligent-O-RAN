@@ -62,8 +62,7 @@ The actions determine the resource allocation for each slice.
 This project also implements a defensive distillation technique for a Deep Reinforcement Learning (DRL) based resource allocation and scheduling model. Defensive distillation is a method used to improve the robustness of machine learning models against adversarial attacks.
 
 **How it Works**
-
-![defensive_distillation](https://github.com/user-attachments/assets/45c993b9-56fa-42bc-9ea3-81dff9b6dea3)
+![defensive_distillation](https://github.com/user-attachments/assets/f921b500-d622-4363-9044-3016a48d644b)
 
 a) ***Teacher Model Loading:***
 
