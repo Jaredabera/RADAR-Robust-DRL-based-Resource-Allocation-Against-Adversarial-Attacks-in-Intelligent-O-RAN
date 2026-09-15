@@ -1,3 +1,19 @@
+"""
+===============================================================================
+Updated base_line_agent.py with EXPLICIT AGGREGATION LOGGING
+===============================================================================
+
+This version adds detailed logging showing exactly how per-slice data rates
+(Table VI) are computed from the Colosseum dataset.
+
+Key additions:
+- Logging at filtering step: how many rows removed
+- Logging at aggregation step: exact mean computation
+- Explicit statistics showing filtering impact
+- Documentation of which dataset/scenario is used
+===============================================================================
+"""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -13,7 +29,57 @@ import numpy as np
 import logging
 import json
 
-# Generating dataset from csv file. Returns a Pandas DataFrame
+# ============================================================================
+# AGGREGATION LOGGING MODULE
+# ============================================================================
+
+class AggregationLogger:
+    """Log aggregation statistics for Table VI reproducibility."""
+    
+    @staticmethod
+    def log_filtering_step(initial_count, filtered_count, filter_name="sum_requested_prbs > 0"):
+        """Log dataset filtering statistics."""
+        removed = initial_count - filtered_count
+        retention_rate = 100 * filtered_count / initial_count if initial_count > 0 else 0
+        
+        logging.info("\n" + "="*70)
+        logging.info(f"FILTERING STEP: {filter_name}")
+        logging.info("="*70)
+        logging.info(f"  Rows before filter:     {initial_count}")
+        logging.info(f"  Rows after filter:      {filtered_count}")
+        logging.info(f"  Rows removed:           {removed}")
+        logging.info(f"  Retention rate:         {retention_rate:.2f}%")
+        logging.info("="*70 + "\n")
+    
+    @staticmethod
+    def log_aggregation_step(slice_name, slice_id, throughput_values):
+        """Log per-slice aggregation (core Table VI computation)."""
+        mean_throughput = np.mean(throughput_values)
+        std_throughput = np.std(throughput_values)
+        min_throughput = np.min(throughput_values)
+        max_throughput = np.max(throughput_values)
+        
+        logging.info("\n" + "="*70)
+        logging.info(f"AGGREGATION STEP: {slice_name.upper()} (Slice ID={slice_id})")
+        logging.info("="*70)
+        logging.info(f"  Data points (UE records): {len(throughput_values)}")
+        logging.info(f"  Mean throughput (TABLE VI VALUE): {mean_throughput:.4f} Mbps")
+        logging.info(f"  Std Dev:                  {std_throughput:.4f} Mbps")
+        logging.info(f"  Min:                      {min_throughput:.4f} Mbps")
+        logging.info(f"  Max:                      {max_throughput:.4f} Mbps")
+        logging.info(f"  Percentiles:")
+        for p in [25, 50, 75, 90, 95]:
+            pval = np.percentile(throughput_values, p)
+            logging.info(f"    {p:3d}th percentile:        {pval:.4f} Mbps")
+        logging.info("="*70 + "\n")
+        
+        return mean_throughput
+
+
+# ============================================================================
+# ENHANCED DATA LOADING WITH FILTERING DOCUMENTATION
+# ============================================================================
+
 def entire_dataset_from_single_file(filename,
                                     col_names,
                                     selected_col_names,
@@ -21,16 +87,34 @@ def entire_dataset_from_single_file(filename,
                                     scale_dl_buffer=True,
                                     replace_zero_with_one=False,
                                     add_prb_ratio=True):
+    """
+    Load and preprocess a single CSV file from Colosseum O-RAN dataset.
+    
+    CRITICAL FILTERING:
+    When remove_zero_req_prb_entries=True:
+    - Removes rows where sum_requested_prbs <= 0 (idle UEs)
+    - This filtering is ESSENTIAL for Table VI reproducibility
+    - Applied BEFORE any aggregation/averaging
+    
+    TRANSFORMATION:
+    - dl_buffer: Scaled by dividing by 10000 (bytes → normalized units)
+    - ratio_granted_req: Computed as sum_granted_prbs / sum_requested_prbs
+    """
     dataset = pd.read_csv(filename, names=col_names, usecols=selected_col_names, header=0)
-
+    
+    initial_size = len(dataset)
+    
+    # ========== CRITICAL FILTERING FOR TABLE VI ==========
     if remove_zero_req_prb_entries:
         dataset = dataset.loc[dataset['sum_requested_prbs'] > 0].reset_index(drop=True)
-
-    if scale_dl_buffer and any(["dl_buffer [bytes]" in m for m in
-                                selected_col_names]):
-        # scale the dl_buffer
+        filtered_size = len(dataset)
+        
+        # Log filtering statistics
+        AggregationLogger.log_filtering_step(initial_size, filtered_size)
+    
+    if scale_dl_buffer and any(["dl_buffer [bytes]" in m for m in selected_col_names]):
         dataset['dl_buffer [bytes]'] = dataset['dl_buffer [bytes]'] / 10000
-
+    
     if add_prb_ratio:
         dict_add = pd.DataFrame.from_dict({"rgb_granted_req": np.clip(np.nan_to_num(
             dataset["sum_granted_prbs"] / dataset["sum_requested_prbs"]), a_min=0, a_max=1)
@@ -41,7 +125,6 @@ def entire_dataset_from_single_file(filename,
     else:
         return dataset
 
-# return all csv files inside a single DataFrame
 def entire_dataset_from_folder(main_folder,
                                wildcard,
                                col_names,
@@ -59,11 +142,10 @@ def entire_dataset_from_folder(main_folder,
                                                  replace_zero_with_one=replace_zero_with_one,
                                                  add_prb_ratio=add_prb_ratio)
         dataset.append(db_tmp)
-
+    
     return pd.concat(dataset, axis=0, ignore_index=True)
 
 
-# take n entries from the DataFrame at random
 def extract_n_entries_from_dataset(dataset=None,
                                    slice_id=None,
                                    n_entries=10,
@@ -79,15 +161,13 @@ def extract_n_entries_from_dataset(dataset=None,
 
     return d_temp
 
-# This function is used here to emulate a DU reporting real-time data. Replace this function with your DU
-# FOR TESTING PURPOSES ONLY
+
 def get_data_from_DUs(dataset=None,
                       n_entries=1000,
                       n_col=4,
                       slice_id=None,
                       metrics_export=None):
-
-    if dataset is None:  # generate random data in case you do not have a dataset
+    if dataset is None:
         values = np.random.random(size=(n_entries, n_col))
         slice_id = np.random.randint(low=0, high=3, size=(n_entries, 1))
         data = np.concatenate((slice_id, values), axis=1)
@@ -100,24 +180,20 @@ def get_data_from_DUs(dataset=None,
     return data
 
 
-# Return lists for metrics, rewards, prbs assigned to each slice.
-# Ideally, the list is such that len(list) = num_slices
 def split_data(slice_profiles=None,
                data_to_spit=None,
                metric_list=None,
                metric_dict=None,
                n_entries_per_slice=None):
+    """Split and organize data by slice. Rewards extracted here are used for Table VI."""
     metrics = []
     prbs = []
     rewards = []
 
-    # ordering here follows slice_profiles
     for i in slice_profiles:
-
         slice_data = data_to_spit[data_to_spit[:, metric_dict['slice_id']] == slice_profiles[i]['slice_id'], :]
 
         if slice_data.size > 0:
-            # repmat on rows to reach needed dimension in case you do not have enough reporting data
             while slice_data.shape[0] < n_entries_per_slice:
                 slice_data = np.vstack((slice_data, np.zeros((1, slice_data.shape[1]))))
 
@@ -140,22 +216,18 @@ def split_data(slice_profiles=None,
 
     return metrics, prbs, rewards
 
-# Used to generate the input to the DRL agent. It returns a TimeStep that contains (step_type, reward, discount, observations)
+
 def generate_timestep_for_policy(obs_tmp=None):
-    step_type = tf.convert_to_tensor(
-        [0], dtype=tf.int32, name='step_type')
-    reward = tf.convert_to_tensor(
-        [0], dtype=tf.float32, name='reward')
-    discount = tf.convert_to_tensor(
-        [1], dtype=tf.float32, name='discount')
-    observations = tf.convert_to_tensor(
-        [obs_tmp], dtype=tf.float32, name='observations')
+    step_type = tf.convert_to_tensor([0], dtype=tf.int32, name='step_type')
+    reward = tf.convert_to_tensor([0], dtype=tf.float32, name='reward')
+    discount = tf.convert_to_tensor([1], dtype=tf.float32, name='discount')
+    observations = tf.convert_to_tensor([obs_tmp], dtype=tf.float32, name='observations')
     return ts.TimeStep(step_type, reward, discount, observations)
 
 
 if __name__ == '__main__':
 
-    # Column names in the srs5G CSV dataset
+    # Column names in the srsLTE CSV dataset
     all_metrics_list = ["Timestamp",
                         "num_ues",
                         "IMSI",
@@ -209,38 +281,75 @@ if __name__ == '__main__':
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
+    logging.info("\n" + "="*70)
+    logging.info("BASELINE AGENT TESTING WITH TABLE VI AGGREGATION LOGGING")
+    logging.info("="*70)
+    logging.info("Dataset: rome_static_close/tr10 (Colosseum O-RAN COMMAG)")
+    logging.info("Filtering: sum_requested_prbs > 0")
+    logging.info("Aggregation: Mean tx_brate per slice")
+    logging.info("="*70 + "\n")
+
     use_gpu_in_env = True
     mtc_policy_filename = './ml_models/mtc_policy'
     urllc_policy_filename = './ml_models/urllc_policy'
     embb_policy_filename = './ml_models/embb_policy'
     autoencoder_filename = './ml_models/encoder.h5'
 
-    # Location of the dataset we want to use (valid in offline testing ONLY)
+    # Location of the dataset (rome_static_close scenario)
     main_folder = './slice_traffic/rome_static_close/tr10'
     wildcard_match = '/*/*/slices_bs*/*_metrics.csv'
 
-    # get dataset for testing purposes only.
-    # This is used as this code does not run with hardware components.
-    # Not needed if getting data from real DUs
+    # Load dataset with filtering
     dataset = entire_dataset_from_folder(main_folder=main_folder,
                                          wildcard=wildcard_match,
                                          col_names=all_metrics_list,
                                          selected_col_names=metric_list_to_extract)
     
-    # Input size to the autoencoder for dimentionality reduction
+    logging.info(f"\nDataset loaded: {len(dataset)} total UE records (after filtering)")
+    
+    # Compute per-slice aggregates for Table VI
+    logging.info("\n" + "="*70)
+    logging.info("TABLE VI AGGREGATION (No-Attack Baseline)")
+    logging.info("="*70)
+    
+    slice_configs = [
+        (0, 'eMBB'),
+        (1, 'mMTC'),
+        (2, 'uRLLC')
+    ]
+    
+    table_vi_results = {}
+    for slice_id, slice_name in slice_configs:
+        slice_data = dataset[dataset['slice_id'] == slice_id]
+        throughput_values = slice_data['tx_brate downlink [Mbps]'].values
+        
+        mean_tp = AggregationLogger.log_aggregation_step(slice_name, slice_id, throughput_values)
+        table_vi_results[slice_name] = mean_tp
+    
+    # Summary
+    logging.info("\n" + "="*70)
+    logging.info("TABLE VI RESULTS SUMMARY (No-Attack)")
+    logging.info("="*70)
+    logging.info(f"  eMBB:  {table_vi_results['eMBB']:.4f} Mbps")
+    logging.info(f"  mMTC:  {table_vi_results['mMTC']:.4f} Mbps")
+    logging.info(f"  uRLLC: {table_vi_results['uRLLC']:.4f} Mbps")
+    logging.info("="*70 + "\n")
+    
+    # Save for reference
+    with open('table_vi_no_attack_baseline.json', 'w') as f:
+        json.dump(table_vi_results, f, indent=2)
+    logging.info("Results saved to: table_vi_no_attack_baseline.json\n")
+    
+    # Load policies only if needed for further testing
     n_entries_for_autoencoder = 10
 
-    # set logging level + enable TF2 behavior
     absl.logging.set_verbosity(absl.logging.INFO)
-    # select which GPU to use
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     if use_gpu_in_env is False:
         gpu_devices = tf.config.experimental.list_physical_devices('GPU')
         tf.config.experimental.set_memory_growth(gpu_devices[0], True)
-        print("Num GPUs Available outside environments: ", len(gpu_devices))
 
-    # load policy, these are the folder where saved_model.pb is stored
     drl_agents = [tf.saved_model.load(embb_policy_filename),
                   tf.saved_model.load(mtc_policy_filename),
                   tf.saved_model.load(urllc_policy_filename)]
@@ -248,7 +357,6 @@ if __name__ == '__main__':
     absl.logging.info('Agents loaded')
 
     autoencoder = tf.keras.models.load_model(autoencoder_filename)
-    
 
     absl.logging.info('Autoencoder loaded')
 
@@ -271,18 +379,18 @@ if __name__ == '__main__':
     for _, val in slice_profiles.items():
         previous_policy[val['slice_id']] = default_policy
 
-    previous_metrics = ''
-    
     rewards_dict = {}
     for profile in slice_profiles.keys():
         rewards_dict[profile] = []
+
+    # Testing loop
+    logging.info("\n" + "="*70)
+    logging.info("AGENT TESTING LOOP (Optional - for policy validation)")
+    logging.info("="*70 + "\n")
     
     while True:
         policies = list()
 
-        # This is where data comes from the DUs.
-        # As an example, we extract data from the static dataset.
-        # You may want to interface it with their own DUs
         data = get_data_from_DUs(dataset=dataset,
                                  n_entries=1000,
                                  metrics_export=metric_list_to_extract).to_numpy()
@@ -297,10 +405,9 @@ if __name__ == '__main__':
             if len(data_tmp[i]) > 0:
                 for row in data_tmp[i]:
                     row[0] /= 100000
-                    
 
                 logging.info('Testing iteration ' + str(i))
-                logging.info('Data received from DU (dl_buffer [bytes], tx_brate downlink [Mbps], rgb_granted_req): ')
+                logging.info('Data received from DU: ')
                 logging.info(np.expand_dims(data_tmp[i], axis=0))
 
                 obs_tmp = autoencoder.predict(np.expand_dims(data_tmp[i], axis=0)).astype('float32')
@@ -310,25 +417,19 @@ if __name__ == '__main__':
                 rewards_dict[profile].append(float(reward_mean))
                 time_step = generate_timestep_for_policy(obs_tmp)
                 action = drl_agents[i].action(time_step)
-                 
-                # append policies to send and store policy
+                
                 policies.append(action[0][0][0].numpy())
                 previous_policy[i] = action[0][0][0].numpy()
 
-                logging.info('Slice ' + str(i) + ': Action is ' + str(action[0][0][0].numpy()) + ' Reward is: ' + str(
-                    reward_mean))
+                logging.info('Slice ' + str(i) + ': Action is ' + str(action[0][0][0].numpy()) + ' Reward is: ' + str(reward_mean))
             else:
-                # append previous policy
                 policies.append(previous_policy[i])
-                logging.info('Using previous action ' + str(previous_policy[i]) + ' for slice profile ' + str(i))
+                logging.info('Using previous action ' + str(previous_policy[i]))
             print()
-        # build message to send policies to the DU
+        
         msg = ','.join([str(x) for x in policies])
-        logging.info('Sending this message to the DU: ' + msg)
+        logging.info('Sending policies: ' + msg)
         with open('rewards.json', 'w') as rewards_file:
             json.dump(rewards_dict, rewards_file)
         
-        
         time.sleep(10)
-       
-  
