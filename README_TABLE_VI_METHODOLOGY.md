@@ -346,7 +346,7 @@ result = filtered_df['tx_brate downlink [Mbps]'].mean() # Direct mean
 ```
 
 ### Key Differences
-1. **Filter applied before aggregation** (RADAR) vs. not applied (your approach)
+1. **Filter applied before aggregation** (RADAR) vs. not applied (our approach)
 2. **No scaling by BS count** (RADAR) - already per-UE mean
 3. **Same dataset** (rome_static_close) but different aggregation logic
 
